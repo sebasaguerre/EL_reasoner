@@ -28,6 +28,7 @@ class ELDestroyer:
        for ind, v in self.individuals.items():
             # loop over all concepts in a ind
             for concept in v["concepts"]:
+                
                 if concept.getClass().getSimpleName() == "ConceptConjunction":
                     lhs = concept.lhs()
                     self.individuals[ind]["concepts"].add(lhs)
@@ -70,7 +71,7 @@ class ELDestroyer:
  
     def r_successor_rule_1(self, rhs, ind):
         # extract roles
-        role = self.formatter.format(rhs)[1:].split()
+        role = self.formatter.format(rhs)[1:].split(".")
 
         # concepts that role point to in ind
         cls = ".".join(role[1:])
@@ -79,7 +80,7 @@ class ELDestroyer:
 
         for i, v in self.individuals.items():
             if cls_obj in v["concepts"]:
-                self.individuals[ind]["roles"].update((role, i))
+                self.individuals[ind]["roles"].update((role[0], i))
                 return
         
         # create new individual when successor no individual has cls
@@ -88,7 +89,7 @@ class ELDestroyer:
         self.top_rule(new_ind)
 
         # assign role (successor) to current individual
-        self.individuals[ind]["roles"].update((role, new_ind))
+        self.individuals[ind]["roles"].update((role[0], new_ind))
 
 
         # # all the succesors of ind with role found
