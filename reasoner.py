@@ -2,11 +2,9 @@ from py4j.java_gateway import JavaGateway
 import sys 
         
 class ELDestroyer:
-    def __init__(self, ontology, gateway):
+    def __init__(self, ontology, gateway): 
         # set ontology inside of class
         self.ontology = ontology
-        print("Loaded the ontology!")
-        print("Converting to binary conjunctions")
         # get formater for pretty printing 
         self.formatter = gateway.getSimpleDLFormatter()
         # convert ontology to BinaryConjuntions 
@@ -113,9 +111,20 @@ class ELDestroyer:
 
     def assign_concepts(self, axiom):
         # get constituents of axiom 
-        # if(axiom.getClass().getSimpleName() 
-        lhs = axiom.lhs()
-        rhs = axiom.rhs()
+        f_axiom = self.formatter.format(axiom)
+        if axiom.getClass().getSimpleName() == "EquivalenceAxiom":
+            # constituents of equivalence
+            const = self.formatter.format(axiom).split("≡")
+            # get 
+            lhs = self.const.getConceptName(const[0])
+            rhs = self.const.getConceptName(const[1]) 
+        
+        else:
+            try:
+                lhs = axiom.lhs()
+                rhs = axiom.rhs()
+            except:
+                print("Error")
 
         # applying equivalence axioms
         if axiom.getClass().getSimpleName() == self.axion_types[1]: 
@@ -227,10 +236,14 @@ class ELDestroyer:
             for axiom in self.axioms:
                 self.assign_concepts(axiom)
             
+            for axiom in self.equi_axioms:
+                if axiom.getClass().getSimpleName() not in self.axion_types: continue 
+                self.assign_concepts(axiom)
+            
             # get new count 
             new_count = self.get_count()
-            print(f"Current while loop iteration {count}")
-            print(f"Previous count {current_count}, new count {new_count}")
+            # print(f"Current while loop iteration {count}")
+            # print(f"Previous count {current_count}, new count {new_count}")
 
             # check for convergence
             if new_count == current_count:
@@ -250,12 +263,13 @@ def pretty_print(lst, formatter):
 
 
 def main():
-   
+    inp = True
     # check if terminal arguments are given correctly
-    # if len(sys.argv) < 3: 
-    #     print("Usage: python reasoner.py ontology_file class_name")
-    #     return 1
-    
+    if inp == False:
+        if len(sys.argv) < 3: 
+            print("Usage: python reasoner.py ontology_file class_name")
+            return 1
+        
      # connect to the java gateway of dl4python
     gateway = JavaGateway()
 
@@ -266,15 +280,19 @@ def main():
     formatter = gateway.getSimpleDLFormatter()
 
     # loand ontology from given command line argument
-    ontology = gateway.getOWLParser().parseFile("cto.clinical-trials-ontology.1.owl.xml")
+    file  = input("Give input file: ") if inp else sys.argv[1]
+    ontology = gateway.getOWLParser().parseFile(file)
     
     # init reasoner 
     reasoner = ELDestroyer(ontology, gateway)
 
+    concept  = input("Give concept: ") if inp else sys.argv[2]
+
     # get concept subsumers 
-    subsumers = reasoner.get_subsumers("Delusion")
+    subsumers = reasoner.get_subsumers(concept)
 
     pretty_print(subsumers, formatter)
+    print(len(subsumers))
     return 0
 
 if __name__ == "__main__":
