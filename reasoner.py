@@ -10,19 +10,18 @@ class ELDestroyer:
         # get formater for pretty printing 
         self.formatter = gateway.getSimpleDLFormatter()
         # convert ontology to BinaryConjuntions 
-        gateway.convertToBinaryConjunctions(ontology)
-        self.axioms = ontology.tbox().getAxioms()
-        self.allConcepts = ontology.getSubConcepts()
-        self.concepts = ontology.getConcepts()
-        self.simple_concepts = ontology.getConceptNames()
-        self.const = self.gateway.getELFactory()
+        gateway.convertToBinaryConjunctions(self.ontology)
+        self.axioms = self.ontology.tbox().getAxioms()
+        self.allConcepts = self.ontology.getSubConcepts()
+        self.simple_concepts = self.ontology.getConceptNames()
+        self.const = gateway.getELFactory()
         self.class_types = ["ConceptConjunction", "ExistentialRoleRestriction"]
-        self.individuals = {0:{'concepts': [], 'roles': []}},
+        self.individuals = {}
         self.axion_types = ["GeneralConceptInclusion", "EquivalenceAxiom"]
 
-    def top_rule(self):
-        self.top = self.elFactory.getTop()
-        self.individuals[self.currentIndividual]['concepts'].append(top)
+    def top_rule(self, ind):
+        self.top = self.const.getTop()
+        self.individuals[ind]['concepts'].append(self.top)
     
     def apply_conjunction_rule1(self, ind, rhs):
         # conjuncts from rhs 
@@ -43,7 +42,7 @@ class ELDestroyer:
         conjunct = self.const.getConjunction(self.const.getConceptName(lhs_str),self. const.getConceptName(rhs_str))
 
         # loop over string axioms
-        for ax in [self.formatter.format(axiom) for axiom in axioms]:
+        for ax in [self.formatter.format(axiom) for axiom in self.axioms]:
             # check if cnjunct exits
             if conjunct in ax:
                 self.individuals[ind]["concepts"].append(conjunct)
@@ -56,6 +55,8 @@ class ELDestroyer:
 
         # concepts that role point to in ind
         cls = ".".join(role[1:])
+        cls_obj = self.const.getConceptName(cls)
+
 
         for i, v in self.individuals.items():
             if cls in v["concepts"]:
@@ -65,6 +66,7 @@ class ELDestroyer:
         # create new individual when successor no individual has cls
         new_ind = max(key for key in self.individuals.keys()) + 1
         self.individuals[new_ind] = {'concepts': [cls], 'roles': []}
+        self.top(new_ind)
 
         # assign role (successor) to current individual
         self.individuals[ind]["roles"].append(role, new_ind)
@@ -87,7 +89,7 @@ class ELDestroyer:
                 return
         
     def get_classt(self, ind):
-        return self.individuals[self.ind]['concepts'].getClass().getSimpleName()
+        return self.individuals[ind]['concepts'].getClass().getSimpleName()
     
     def get_count(self):
         # calculate total amount of concepts and roles in individuals 
@@ -190,11 +192,16 @@ class ELDestroyer:
 
     def get_subsumers(self, class_name):
 
-        self.individuals[self.currentIndividual].append(class_name)
-        self.top_rule()
-        if self.get_classt(self.currentIndividual) in self.class_types:
-            self.apply_conjunction_rule1(self.currentIndividual, self.get_classt(self.currentIndividual))
-            self.r_successor_rule(self.currentIndividual, self.get_classt(self.currentIndividual))
+        #  convert class_name into jav.obj
+        class_name_obj = self.const.getConceptName(class_name)
+
+        # initilaize first individual 
+        self.individuals[0] = {"concepts" : [class_name_obj], "roles" : []}
+        self.top_rule(0)
+
+        # if self.get_classt(0) in self.class_types:
+        #     self.apply_conjunction_rule1(self.individuals[0], self.get_classt(class_name))
+        #     self.r_successor_rule(self.individuals[0], self.get_classt(class_name))
 
         # convergence criterian
         change = True
@@ -227,7 +234,7 @@ def pretty_print(lst):
 def main():
    
     # check if terminal arguments are given correctly
-    if len(sys.argv) > 3: 
+    if len(sys.argv) < 3: 
         print("Usage: python reasoner.py ontology_file class_name")
         return 1
     
