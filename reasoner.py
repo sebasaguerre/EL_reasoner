@@ -24,35 +24,37 @@ class ELDestroyer:
         self.top = self.const.getTop()
         self.individuals[ind]['concepts'].append(self.top)
     
-    def apply_conjunction_rule1(self, rhs, ind):
-        # conjuncts from rhs 
-        conjuncts = rhs.getConjuncts()
+    def apply_conjunction_rule1(self):
+       
+       # if conjunct in individual add conjuncts 
+       for ind, v in self.individuals.items():
+            # loop over all concepts in a ind
+            for concept in v:
+                if concept.getClass().getSimpleName() == "ConceptConjunction":
+                    lhs = concept.lhs()
+                    self.individuals[ind]["concepts"].append(lhs)
+                    rhs = concept.rhs()
+                    self.individuals[ind]["concepts"].append(rhs)
         
-        # iterate over conjunctions 
-        for conj in conjuncts:
-            # if conjunct not present append 
-            if conj not in self.individuals[ind]["concepts"]:
-                self.individuals[ind]["concepts"].append(conj)
 
-        
-
-    def apply_conjunction_rule2(self, rhs, ind):
+    def apply_conjunction_rule2(self):
         # create conjunct concept
-        a
-        rhs_str = self.formatter.format(rhs)
-        conjunct = self.const.getConjunction(self.const.getConceptName(lhs_str),self. const.getConceptName(rhs_str))
+        for conjunct in self.axiom_conjunct:
+            # get conjunct lhs, rhs
+            c_lhs = conjunct.lhs()
+            c_rhs = conjunct.rhs()
 
-        # loop over string axioms
-        for ax in [self.formatter.format(axiom) for axiom in self.axioms]:
-            # check if cnjunct exits
-            if conjunct in ax:
-                self.individuals[ind]["concepts"].append(conjunct)
-                break
+            for ind, v in self.individuals.items():
+                if c_lhs in v["concepts"] and c_rhs in v["concepts"]:
+                    self.individuals[ind]["concepts"].append(conjunct)
+            
 
+        # rhs_str = self.formatter.format(rhs)
+        # conjunct = self.const.getConjunction(self.const.getConceptName(lhs_str),self. const.getConceptName(rhs_str))
 
+ 
     def r_successor_rule_1(self, rhs, ind):
         # extract roles
-        print(type(rhs))
         role = self.formatter.format(rhs)[1:].split()
 
         # concepts that role point to in ind
@@ -68,10 +70,10 @@ class ELDestroyer:
         # create new individual when successor no individual has cls
         new_ind = max(key for key in self.individuals.keys()) + 1
         self.individuals[new_ind] = {'concepts': [cls], 'roles': []}
-        self.top(new_ind)
+        self.top_rule(new_ind)
 
         # assign role (successor) to current individual
-        self.individuals[ind]["roles"].append(role, new_ind)
+        self.individuals[ind]["roles"].append((role, new_ind))
 
 
         # # all the succesors of ind with role found
@@ -83,10 +85,11 @@ class ELDestroyer:
 
         # concepts that role point to in ind
         cls = ".".join(role[1:])
-        
+        cls_obj = self.const.getConceptName(cls)
+
         # inidviduals, values 
         for i, v in self.individuals.items():
-            if cls in v["concepts"]:
+            if cls_obj in v["concepts"]:
                 self.individuals[ind]["concepts"].append(rhs)
                 return
         
@@ -96,13 +99,13 @@ class ELDestroyer:
     def get_count(self):
         # calculate total amount of concepts and roles in individuals 
         count = sum([len(self.individuals[i]["concepts"]) for i in self.individuals.keys()])
-        count += + sum([len(self.individuals[i]["roles"]) for i in self.individuals.keys()])
+        count += sum([len(self.individuals[i]["roles"]) for i in self.individuals.keys()])
         return count
     
     def apply_rules(self, rhs, ind):
-        if(rhs.getClass().getSimpleName() == self.class_types[0]):
-            self.apply_conjunction_rule1(rhs, ind)
-            self.apply_conjunction_rule2(rhs, ind)
+        if(rhs.getClass().getSimpleName() != self.class_types[1]):
+            self.apply_conjunction_rule1()
+            self.apply_conjunction_rule2()
         else:
             # applying the rules if the lhs is an existential role restriction
             self.r_successor_rule_1(rhs, ind)
@@ -132,9 +135,9 @@ class ELDestroyer:
             # check if the lhs is a simple concept
             if lhs in self.simple_concepts:
             # apply rules based on the axiom type
-                for ind, v in self.individuals.items():
+                for ind in range(len(self.individuals.keys())):
                     # check if lhs occurs inside the individuals concepts
-                    if lhs in v["concepts"]:
+                    if lhs in self.individuals[ind]["concepts"]:
                         # applying the rules if the lhs is a concept conjunction
                         self.individuals[ind]["concepts"].append(rhs)
                         self.apply_rules(rhs, ind)
@@ -154,9 +157,9 @@ class ELDestroyer:
                 lhs_c = lhs.getConjuncts() # [0] = conjunct1, [1] = conjunct2
 
                 # loop over individual
-                for ind, v in self.individuals.items():
+                for ind in range(len(self.individuals.keys())):
                     # check if first lhs concepts is in the individuals concepts
-                    if lhs_c[0] in v["concepts"]:
+                    if lhs_c[0] in self.individuals[ind]["concepts"]:
                         # check if the lhs_c[1] is simple class
                         # if lhs_c[1].getClass().getSimpleName() not in self.class_types:
                         #     if lhs_c[1] in v["concepts"]:
@@ -164,13 +167,16 @@ class ELDestroyer:
                         #         self.apply_rules(rhs, ind)
                         ## check for simple concepts 
                         if lhs_c[1].getClass().getSimpleName() == self.class_types[0]:
-                            if lhs_c[1] in v["concepts"]:
+                            if lhs_c[1] in self.individuals[ind]["concepts"]:
                                 self.individuals[ind]["concepts"].append(rhs)
                                 self.apply_rules(rhs, ind)
                         # check if the lhs is an existential role restriction
                         else:
                             # get the role of the lhs
                             role = self.formatter.format(lhs)[1:].split(".") # [0] = role, [1] = concept
+
+                            # values current individual 
+                            v = self.individual[ind]
 
                             # indfind the individuals that have the role
                             inds = [v["roles"][i][1] for i in range(len(v["roles"])) if v["roles"][i][0] == role[0]]
