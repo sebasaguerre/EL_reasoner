@@ -39,8 +39,25 @@ class ELDestroyer:
         # create conjunct concept
         for conjunct in self.axiom_conjuncts:
             # get conjunct lhs, rhs
-            c_lhs = conjunct.lhs()
-            c_rhs = conjunct.rhs()
+            f_conjunct = self.formatter.format(conjunct)
+
+            conjuncts = self.formatter.format(conjunct).strip("()").split(" ⊓ ")
+            c_lhs = self.const.getConceptName(conjuncts[0])
+
+            # construct rhs as a esixtential_role_restriction
+            if "∃" in conjuncts[1]:
+                sub_parts = conjuncts[1][1:].split(".")
+                role = self.const.getRole(sub_parts[0])
+                concept = self.const.getConceptName(sub_parts[1])
+
+                try:
+                    c_rhs = self.const.getExistentialRoleRestriction(role, concept)
+                except:
+                    print("ERROR")
+            
+            else:
+                c_rhs = self.const.getConceptName(conjuncts[1])
+            
 
             for ind, v in self.individuals.items():
                 if c_lhs in v["concepts"] and c_rhs in v["concepts"]:
@@ -120,11 +137,8 @@ class ELDestroyer:
             rhs = self.const.getConceptName(const[1]) 
         
         else:
-            try:
-                lhs = axiom.lhs()
-                rhs = axiom.rhs()
-            except:
-                print("Error")
+            lhs = axiom.lhs()
+            rhs = axiom.rhs()
 
         # applying equivalence axioms
         if axiom.getClass().getSimpleName() == self.axion_types[1]: 
@@ -234,9 +248,6 @@ class ELDestroyer:
 
             # previous count  
             for axiom in self.axioms:
-                self.assign_concepts(axiom)
-            
-            for axiom in self.equi_axioms:
                 if axiom.getClass().getSimpleName() not in self.axion_types: continue 
                 self.assign_concepts(axiom)
             
