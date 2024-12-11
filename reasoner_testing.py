@@ -23,3 +23,26 @@ print("Loaded the ontology!")
 # The following command changes all conjunctions so that they have at most two conjuncts
 print("Converting to binary conjunctions")
 gateway.convertToBinaryConjunctions(ontology)
+
+print("Converting to binary conjunctions")
+gateway.convertToBinaryConjunctions(ontology)
+
+# get the TBox axioms
+tbox = ontology.tbox()
+axioms = tbox.getAxioms()
+
+print("These are the axioms in the TBox:")
+for axiom in axioms:
+    print(formatter.format(axiom))
+
+# access the type of axioms:
+foundGCI = False
+foundEquivalenceAxiom = False
+print()
+print("Looking for axiom types in EL")
+all_concepts = ontology.getSubConcepts()
+simple_names = ontology.getConceptNames()
+for concept in all_concepts:
+    print(f"concept: {formatter.format(concept)}")
+for name in simple_names:
+    print(f"name: {formatter.format(name)}")
