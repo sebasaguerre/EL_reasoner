@@ -14,6 +14,7 @@ class ELDestroyer:
         self.axioms = self.ontology.tbox().getAxioms()
         self.allConcepts = self.ontology.getSubConcepts()
         self.simple_concepts = self.ontology.getConceptNames()
+        self.axiom_conjuncts = [concept for concept in self.allConcepts if concept.getClass().getSimpleName() == "ConceptConjunction"]
         self.const = gateway.getELFactory()
         self.class_types = ["ConceptConjunction", "ExistentialRoleRestriction"]
         self.individuals = {}
@@ -37,7 +38,7 @@ class ELDestroyer:
 
     def apply_conjunction_rule2(self, rhs, ind):
         # create conjunct concept
-        lhs_str = self.formatter.format(lhs)
+        a
         rhs_str = self.formatter.format(rhs)
         conjunct = self.const.getConjunction(self.const.getConceptName(lhs_str),self. const.getConceptName(rhs_str))
 
