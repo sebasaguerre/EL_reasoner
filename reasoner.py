@@ -22,7 +22,7 @@ class ELDestroyer:
 
     def top_rule(self, ind):
         self.top = self.const.getTop()
-        self.individuals[ind]['concepts'].append(self.top)
+        self.individuals[ind]['concepts'].add(self.top)
     
     def apply_conjunction_rule1(self):
        
@@ -32,9 +32,9 @@ class ELDestroyer:
             for concept in v["concepts"]:
                 if concept.getClass().getSimpleName() == "ConceptConjunction":
                     lhs = concept.lhs()
-                    self.individuals[ind]["concepts"].append(lhs)
+                    self.individuals[ind]["concepts"].add(lhs)
                     rhs = concept.rhs()
-                    self.individuals[ind]["concepts"].append(rhs)
+                    self.individuals[ind]["concepts"].add(rhs)
         
 
     def apply_conjunction_rule2(self):
@@ -46,7 +46,7 @@ class ELDestroyer:
 
             for ind, v in self.individuals.items():
                 if c_lhs in v["concepts"] and c_rhs in v["concepts"]:
-                    self.individuals[ind]["concepts"].append(conjunct)
+                    self.individuals[ind]["concepts"].add(conjunct)
             
 
         # rhs_str = self.formatter.format(rhs)
@@ -63,17 +63,17 @@ class ELDestroyer:
 
 
         for i, v in self.individuals.items():
-            if cls in v["concepts"]:
-                self.individuals[ind]["roles"].append((role, i))
+            if cls_obj in v["concepts"]:
+                self.individuals[ind]["roles"].update((role, i))
                 return
         
         # create new individual when successor no individual has cls
         new_ind = max(key for key in self.individuals.keys()) + 1
-        self.individuals[new_ind] = {'concepts': [cls], 'roles': []}
+        self.individuals[new_ind] = {'concepts': set([cls]), 'roles': set([])}
         self.top_rule(new_ind)
 
         # assign role (successor) to current individual
-        self.individuals[ind]["roles"].append((role, new_ind))
+        self.individuals[ind]["roles"].update((role, new_ind))
 
 
         # # all the succesors of ind with role found
@@ -90,7 +90,7 @@ class ELDestroyer:
         # inidviduals, values 
         for i, v in self.individuals.items():
             if cls_obj in v["concepts"]:
-                self.individuals[ind]["concepts"].append(rhs)
+                self.individuals[ind]["concepts"].add(rhs)
                 return
         
     def get_classt(self, ind):
@@ -122,11 +122,11 @@ class ELDestroyer:
             for ind, v in self.individuals.items():
                 # check lhs in concepts
                 if lhs in v["concepts"]:
-                    self.individuals[ind]['concepts'].append(rhs)
+                    self.individuals[ind]['concepts'].add(rhs)
                     self.apply_rules(rhs, ind)
                 # check rhs in concepts 
                 if rhs in v["concepts"]:
-                    self.individuals[ind]['concepts'].append(lhs)
+                    self.individuals[ind]['concepts'].add(lhs)
                     self.apply_rules(lhs, ind)
                     
 
@@ -139,7 +139,7 @@ class ELDestroyer:
                     # check if lhs occurs inside the individuals concepts
                     if lhs in self.individuals[ind]["concepts"]:
                         # applying the rules if the lhs is a concept conjunction
-                        self.individuals[ind]["concepts"].append(rhs)
+                        self.individuals[ind]["concepts"].add(rhs)
                         self.apply_rules(rhs, ind)
 
                         # if(rhs.getClass().getSimpleName() == self.class_types[0]):
@@ -168,7 +168,7 @@ class ELDestroyer:
                         ## check for simple concepts 
                         if lhs_c[1].getClass().getSimpleName() == self.class_types[0]:
                             if lhs_c[1] in self.individuals[ind]["concepts"]:
-                                self.individuals[ind]["concepts"].append(rhs)
+                                self.individuals[ind]["concepts"].add(rhs)
                                 self.apply_rules(rhs, ind)
                         # check if the lhs is an existential role restriction
                         else:
@@ -185,11 +185,11 @@ class ELDestroyer:
                             for i in inds:
                                 if role[1] in self.individuals[i]["concepts"]:
                                     # append lhs_c[1]
-                                    self.individuals[ind]["concepts"].append(lhs_c[1])
+                                    self.individuals[ind]["concepts"].add(lhs_c[1])
                                     # append lhs
-                                    self.individuals[ind]["concepts"].append(lhs)
+                                    self.individuals[ind]["concepts"].add(lhs)
                                     # => rhs is present 
-                                    self.individuals[ind]["concepts"].append(rhs)
+                                    self.individuals[ind]["concepts"].add(rhs)
                                     # apply rules to rhs 
                                     self.apply_rules(rhs, ind)
                                     break
@@ -207,7 +207,7 @@ class ELDestroyer:
         class_name_obj = self.const.getConceptName(class_name)
 
         # initilaize first individual 
-        self.individuals[0] = {"concepts" : [class_name_obj], "roles" : []}
+        self.individuals[0] = {"concepts" : set([class_name_obj]), "roles" : set([])}
         self.top_rule(0)
 
         # if self.get_classt(0) in self.class_types:
@@ -229,6 +229,8 @@ class ELDestroyer:
             
             # get new count 
             new_count = self.get_count()
+            print(f"Current while loop iteration {count}")
+            print(f"Previous count {current_count}, new count {new_count}")
 
             # check for convergence
             if new_count == current_count:
@@ -237,14 +239,14 @@ class ELDestroyer:
                 current_count = new_count 
             
             count += 1
-            print(f"Current while loop iteration {count}")
+            
         
         # return subsumer of given class
         return self.individuals[0]["concepts"]
 
-def pretty_print(lst):
+def pretty_print(lst, formatter):
     for elem in lst:
-        print(elem)
+        print(formatter.format(elem))
 
 
 def main():
@@ -260,6 +262,9 @@ def main():
     # get a parser from OWL files to DL ontologies
     parser = gateway.getOWLParser()
 
+    # formatter 
+    formatter = gateway.getSimpleDLFormatter()
+
     # loand ontology from given command line argument
     ontology = gateway.getOWLParser().parseFile("cto.clinical-trials-ontology.1.owl.xml")
     
@@ -269,7 +274,7 @@ def main():
     # get concept subsumers 
     subsumers = reasoner.get_subsumers("Delusion")
 
-    pretty_print(subsumers)
+    pretty_print(subsumers, formatter)
     return 0
 
 if __name__ == "__main__":
