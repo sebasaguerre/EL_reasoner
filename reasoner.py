@@ -23,7 +23,7 @@ class ELDestroyer:
         self.top = self.const.getTop()
         self.individuals[ind]['concepts'].append(self.top)
     
-    def apply_conjunction_rule1(self, ind, rhs):
+    def apply_conjunction_rule1(self, rhs, ind):
         # conjuncts from rhs 
         conjuncts = rhs.getConjuncts()
         
@@ -35,7 +35,7 @@ class ELDestroyer:
 
         
 
-    def apply_conjunction_rule2(self, ind, lhs, rhs):
+    def apply_conjunction_rule2(self, rhs, ind):
         # create conjunct concept
         lhs_str = self.formatter.format(lhs)
         rhs_str = self.formatter.format(rhs)
@@ -51,6 +51,7 @@ class ELDestroyer:
 
     def r_successor_rule_1(self, rhs, ind):
         # extract roles
+        print(type(rhs))
         role = self.formatter.format(rhs)[1:].split()
 
         # concepts that role point to in ind
@@ -99,12 +100,12 @@ class ELDestroyer:
     
     def apply_rules(self, rhs, ind):
         if(rhs.getClass().getSimpleName() == self.class_types[0]):
-            self.apply_conjunction_rule1(ind, rhs)
-            self.apply_conjunction_rule2(ind, rhs)
+            self.apply_conjunction_rule1(rhs, ind)
+            self.apply_conjunction_rule2(rhs, ind)
         else:
             # applying the rules if the lhs is an existential role restriction
-            self.r_successor_rule_1(ind, rhs)
-            self.r_successor_rule_2(ind, rhs)
+            self.r_successor_rule_1(rhs, ind)
+            self.r_successor_rule_2(rhs, ind)
 
     def assign_concepts(self, axiom):
         # get constituents of axiom 
@@ -155,13 +156,16 @@ class ELDestroyer:
                 for ind, v in self.individuals.items():
                     # check if first lhs concepts is in the individuals concepts
                     if lhs_c[0] in v["concepts"]:
-                        # check if the lhs is a concept conjunction
-
-
+                        # check if the lhs_c[1] is simple class
+                        # if lhs_c[1].getClass().getSimpleName() not in self.class_types:
+                        #     if lhs_c[1] in v["concepts"]:
+                        #         self.individuals[ind]["concepts"].append(rhs)
+                        #         self.apply_rules(rhs, ind)
                         ## check for simple concepts 
                         if lhs_c[1].getClass().getSimpleName() == self.class_types[0]:
                             if lhs_c[1] in v["concepts"]:
-                                self.apply_rules(lhs_c[1], rhs, ind)
+                                self.individuals[ind]["concepts"].append(rhs)
+                                self.apply_rules(rhs, ind)
                         # check if the lhs is an existential role restriction
                         else:
                             # get the role of the lhs
@@ -180,7 +184,7 @@ class ELDestroyer:
                                     # => rhs is present 
                                     self.individuals[ind]["concepts"].append(rhs)
                                     # apply rules to rhs 
-                                    self.apply_rules(lhs, rhs, ind)
+                                    self.apply_rules(rhs, ind)
                                     break
                     
             # if(axiom.getClass().getSimpleName() == self.axion_types[0]:
@@ -234,9 +238,9 @@ def pretty_print(lst):
 def main():
    
     # check if terminal arguments are given correctly
-    if len(sys.argv) < 3: 
-        print("Usage: python reasoner.py ontology_file class_name")
-        return 1
+    # if len(sys.argv) < 3: 
+    #     print("Usage: python reasoner.py ontology_file class_name")
+    #     return 1
     
      # connect to the java gateway of dl4python
     gateway = JavaGateway()
@@ -245,13 +249,13 @@ def main():
     parser = gateway.getOWLParser()
 
     # loand ontology from given command line argument
-    ontology = gateway.getOWLParser().parseFile(sys.argv[1])
+    ontology = gateway.getOWLParser().parseFile("cto.clinical-trials-ontology.1.owl.xml")
     
     # init reasoner 
     reasoner = ELDestroyer(ontology, gateway)
 
     # get concept subsumers 
-    subsumers = reasoner.get_subsumers(sys.argv[2])
+    subsumers = reasoner.get_subsumers("Delusion")
 
     pretty_print(subsumers)
     return 0
