@@ -29,7 +29,7 @@ class ELDestroyer:
        # if conjunct in individual add conjuncts 
        for ind, v in self.individuals.items():
             # loop over all concepts in a ind
-            for concept in v:
+            for concept in v["concepts"]:
                 if concept.getClass().getSimpleName() == "ConceptConjunction":
                     lhs = concept.lhs()
                     self.individuals[ind]["concepts"].append(lhs)
@@ -39,7 +39,7 @@ class ELDestroyer:
 
     def apply_conjunction_rule2(self):
         # create conjunct concept
-        for conjunct in self.axiom_conjunct:
+        for conjunct in self.axiom_conjuncts:
             # get conjunct lhs, rhs
             c_lhs = conjunct.lhs()
             c_rhs = conjunct.rhs()
@@ -219,6 +219,8 @@ class ELDestroyer:
 
         current_count = self.get_count()
 
+        count = 0
+        
         while change:
 
             # previous count  
@@ -233,6 +235,9 @@ class ELDestroyer:
                 change = False
             else:
                 current_count = new_count 
+            
+            count += 1
+            print(f"Current while loop iteration {count}")
         
         # return subsumer of given class
         return self.individuals[0]["concepts"]
