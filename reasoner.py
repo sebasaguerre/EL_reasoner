@@ -354,7 +354,7 @@ class ELDestroyer:
 
 
 def main():
-    inp = True
+    inp = False
     # check if terminal arguments are given correctly
     if inp == False:
         if len(sys.argv) < 3: 
